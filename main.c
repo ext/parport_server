@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
-
+#include <sys/select.h>
 
 #include <getopt.h>
 #include <sys/socket.h>
@@ -36,6 +36,7 @@ void show_usage(void){
 	 "  -h, --help         This text.\n"
 	 "\n"
 	 "If neither -l or -p is given it listens on unix domain socket.\n"
+	 "Device is usually /dev/parport0\n"
 	 , DEFAULT_LISTEN_PORT);
 }
 
@@ -45,6 +46,44 @@ static in_addr_t ip;
 
 void sigint_handler(int sig){
   running = 0;
+  putc('\r', stderr);
+}
+
+static int port_open(const char* port){
+  // Open the parallel port for reading and writing
+  int fd = open(port, O_RDWR);
+  
+  if ( fd == -1 ){
+    perror("Failed to open parallel port");
+    return -1;
+  }
+
+  // Try to claim port
+  if ( ioctl(fd, PPCLAIM, NULL) ){
+    perror("Could not claim parallel port");
+    close(fd);
+    return -1;
+  }
+
+  // Set the Mode
+  static const int mode = IEEE1284_MODE_BYTE;
+  if ( ioctl(fd, PPSETMODE, &mode) ){
+    perror("Could not set mode");
+    ioctl(fd, PPRELEASE);
+    close(fd);
+    return -1;
+  }
+
+  // Set data pins to output
+  static const int dir = 0x00;
+  if ( ioctl(fd, PPDATADIR, &dir) ){
+    perror("Could not set parallel port direction");
+    ioctl(fd, PPRELEASE);
+    close(fd);
+    return -1;
+  }
+
+  return fd;
 }
 
 int main(int argc, char* argv[]){
@@ -76,6 +115,13 @@ int main(int argc, char* argv[]){
       fprintf(stderr, "declared but unhandled argument -%c\n", op);
       break;
     }
+
+  if ( optind == argc ){
+    fprintf(stderr, "Missing device, see --help for usage.\n");
+    exit(1);
+  }
+
+  const char* device = argv[optind];
    
   fprintf(stderr, "Parallel port interface server\n");
 
@@ -99,37 +145,10 @@ int main(int argc, char* argv[]){
     perror("failed to listen");
   }
 
-  // Open the parallel port for reading and writing
-  int fd = open("/dev/parport0", O_RDWR);
-
-  if ( fd == -1 ){
-    perror("Failed to open parallel port");
-    return 1;
-  }
-
-  // Try to claim port
-  if ( ioctl(fd, PPCLAIM, NULL) ){
-    perror("Could not claim parallel port");
-    close(fd);
-    return 1;
-  }
-
-  // Set the Mode
-  int mode = IEEE1284_MODE_BYTE;
-  if ( ioctl(fd, PPSETMODE, &mode) ){
-    perror("Could not set mode");
-    ioctl(fd, PPRELEASE);
-    close(fd);
-    return 1;
-  }
-
-  // Set data pins to output
-  int dir = 0x00;
-  if ( ioctl(fd, PPDATADIR, &dir) ){
-    perror("Could not set parallel port direction");
-    ioctl(fd, PPRELEASE);
-    close(fd);
-    return 1;
+  int fd;
+  fprintf(stderr, "Opening device %s\n", device);
+  if ( (fd=port_open(device)) == -1 ){
+    exit(1); /* error already shown */
   }
 
   /* all pins low */
@@ -140,6 +159,17 @@ int main(int argc, char* argv[]){
     printf("current output: 0x%02x\n", 0xFF & dataL);
     ioctl(fd, PPWDATA, &dataH);
     ioctl(fd, PPWDATA, &dataL);
+
+    /* wait until a client connects */
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(sock, &fds);
+    if ( select(sock+1, &fds, NULL, NULL, NULL) == -1 ){
+      if ( errno != EINTR ){
+	perror("select");
+      }
+      continue;
+    }
 
     struct sockaddr_un peer;
     socklen_t len = sizeof(struct sockaddr_un);
