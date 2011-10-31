@@ -4,6 +4,8 @@ all: main.o
 %.o: %.c
 	${CC} -Wall -std=c99 -D_GNU_SOURCE -c ${CFLAGS} $< -o $@
 
+install:
+	install parserver $(DESTDIR)bin/parserver
+
 clean:
 	rm -f *.o parserver
-
