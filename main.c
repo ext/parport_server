@@ -159,7 +159,7 @@ int main(int argc, char* argv[]){
 	  }
 	  break;
   }
-  if ( retry == 2 ){ /* failed to bind */
+  if ( retry == 3 ){ /* failed to bind */
 	  fprintf(stderr, "failed to bind socket\n");
 	  exit(1);
   }
