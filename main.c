@@ -148,6 +148,7 @@ int main(int argc, char* argv[]){
 				  exit(0);
 			  } else {
 				  /* could not connect, assume it is dead */
+				  fprintf(stderr, "dead daemon deteched, removing socket\n");
 				  unlink(addr.sun_path);
 				  continue;
 			  }
@@ -159,6 +160,7 @@ int main(int argc, char* argv[]){
 	  break;
   }
   if ( retry == 2 ){ /* failed to bind */
+	  fprintf(stderr, "failed to bind socket\n");
 	  exit(1);
   }
   if ( listen(sock, 1) == -1){
