@@ -137,11 +137,29 @@ int main(int argc, char* argv[]){
     perror("Failed to create socket");
     return 1;
   }
-  addr.sun_family = AF_UNIX;
-  snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", sock_path);
-  if ( bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == -1 ){
-    perror("failed to bind socket");
-    return 1;
+  int retry = 0;
+  while ( retry++ < 2 ){ /* retry at most 2 times */
+	  addr.sun_family = AF_UNIX;
+	  snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", sock_path);
+	  if ( bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == -1 ){
+		  if ( errno == EADDRINUSE ){ /* adress already used, try to connect to the socket */
+			  if ( connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == 0 ){
+				  fprintf(stderr, "daemon already running\n");
+				  exit(0);
+			  } else {
+				  /* could not connect, assume it is dead */
+				  unlink(addr.sun_path);
+				  continue;
+			  }
+		  } else {
+			  perror("failed to bind socket");
+			  return 1;
+		  }
+	  }
+	  break;
+  }
+  if ( retry == 2 ){ /* failed to bind */
+	  exit(1);
   }
   if ( listen(sock, 1) == -1){
     perror("failed to listen");
