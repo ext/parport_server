@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <sys/select.h>
+#include <sys/stat.h>
 
 #include <getopt.h>
 #include <sys/socket.h>
@@ -144,6 +145,9 @@ int main(int argc, char* argv[]){
   if ( listen(sock, 1) == -1){
     perror("failed to listen");
   }
+
+  /* fix permissions on socket */
+  chmod(addr.sun_path, 0666);
 
   int fd;
   fprintf(stderr, "Opening device %s\n", device);
