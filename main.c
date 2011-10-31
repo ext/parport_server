@@ -138,7 +138,7 @@ int main(int argc, char* argv[]){
     return 1;
   }
   int retry = 0;
-  while ( retry++ < 2 ){ /* retry at most 2 times */
+  while ( retry++ < 3 ){ /* retry at most 2 times */
 	  addr.sun_family = AF_UNIX;
 	  snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", sock_path);
 	  if ( bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == -1 ){
