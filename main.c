@@ -90,6 +90,7 @@ static int port_open(const char* port){
 int main(int argc, char* argv[]){
   ip = inet_addr("127.0.0.1");
   const char* sock_path = DEFAULT_SOCK_PATH;
+  int exit_code = 1;
 
   int option_index = 0;
   int op;
@@ -152,7 +153,7 @@ int main(int argc, char* argv[]){
   int fd;
   fprintf(stderr, "Opening device %s\n", device);
   if ( (fd=port_open(device)) == -1 ){
-    exit(1); /* error already shown */
+    goto socket_cleanup; /* error already shown */
   }
 
   /* all pins low */
@@ -240,12 +241,14 @@ int main(int argc, char* argv[]){
   }
 
   fprintf(stderr, "Shutting down\n");
+  exit_code = 0;
 
   // Release and close the parallel port
   ioctl(fd, PPRELEASE);
   close(fd);
 
+ socket_cleanup:
   unlink(sock_path);
 
-  return 0;
+  return exit_code;
 }
