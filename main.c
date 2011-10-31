@@ -252,7 +252,7 @@ int main(int argc, char* argv[]){
     } else {
       fprintf(stderr, "unknown command: %s\n", cmd);
       bytes = snprintf(buffer, 128, "0;unknown command: %s", cmd);
-      send(client, buffer, (int)bytes, 0);
+      send(client, buffer, (int)bytes, MSG_NOSIGNAL);
     }
 
     free(cmd);
