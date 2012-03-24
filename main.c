@@ -354,19 +354,19 @@ int main(int argc, char* argv[]){
 		}
 		cmd = strdup(cmd);
 
-		if ( strcmp(cmd, "set") == 0 ){
+		if ( strcasecmp(cmd, "set") == 0 ){
 			char* pin_str = strtok(NULL, " ");
 			char* action = strtok(NULL, " ");
 			int pin = 1 << (pin_str[1] - '0');
 
-			if ( strcmp(action, "hi") == 0 ){
+			if ( strcasecmp(action, "hi") == 0 ){
 				dataL |= pin;
-			} else if ( strcmp(action, "low") == 0 ){
+			} else if ( strcasecmp(action, "low") == 0 ){
 				dataL &= ~pin;
-			} else if ( strcmp(action, "toggle") == 0 ){
+			} else if ( strcasecmp(action, "toggle") == 0 ){
 				dataL ^= pin;
 			}
-		} else if ( strcmp(cmd, "strobe") == 0 ){
+		} else if ( strcasecmp(cmd, "strobe") == 0 ){
 			char* pin_str = strtok(NULL, " ");
 			char* time_str = strtok(NULL, " ");
 			int pin = 1 << (pin_str[1] - '0');
