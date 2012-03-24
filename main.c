@@ -21,7 +21,7 @@
 
 #define DEFAULT_LISTEN_PORT 7613
 #define DEFAULT_SOCK_PATH "./parserver.sock"
-
+#define VERSION "1.1"
 
 static int running = 1;
 static int port = 0;
@@ -39,15 +39,14 @@ static struct option long_options[] = {
 };
 
 void show_usage(void){
-	printf("(C) 2011 David Sveningsson <ext@sidvind.com>\n");
 	printf("usage: parserver [OPTIONS] DEVICE\n");
-	printf("  -p, --port=PORT    Listen on port [default: %d]\n"
-	       "  -l, --listen=IP    Listen on on ip [default: 127.0.0.1]\n"
+	printf("  -p, --port=PORT    Port to use for TCP [default: %d]\n"
+	       "  -l, --listen[=IP]  Listen on TCP [default ip: 127.0.0.1]\n"
 	       "  -s, --path=FILE    Path to Unix Domain Socket. [default: %s]\n"
 	       "  -v, --verbose      Enable verbose output.\n"
 	       "  -h, --help         This text.\n"
 	       "\n"
-	       "If neither -l or -p is given it listens on unix domain socket.\n"
+	       "Unless -l is given it listens on unix domain socket.\n"
 	       "Device is usually /dev/parport0\n"
 	       , DEFAULT_LISTEN_PORT, DEFAULT_SOCK_PATH);
 }
@@ -181,6 +180,9 @@ static int open_tcp(in_addr_t ip, int port){
 }
 
 int main(int argc, char* argv[]){
+	printf("parserver-" VERSION " Parallel port interface server.\n"
+	       "(C) 2011-2012 David Sveningsson <ext@sidvind.com>\n\n");
+
 	ip = inet_addr("127.0.0.1");
 	port = htons(DEFAULT_LISTEN_PORT);
 	const char* sock_path = DEFAULT_SOCK_PATH;
@@ -230,8 +232,6 @@ int main(int argc, char* argv[]){
 
 	const char* device = argv[optind];
 
-	fprintf(stderr, "Parallel port interface server\n");
-
 	/* handle signals */
 	signal(SIGINT, sigint_handler);
 
@@ -247,7 +247,7 @@ int main(int argc, char* argv[]){
 	}
 
 	int fd;
-	fprintf(stderr, "Opening device %s\n", device);
+	fprintf(verbose, "Opening device %s\n", device);
 	if ( (fd=port_open(device)) == -1 ){
 		goto socket_cleanup; /* error already shown */
 	}
