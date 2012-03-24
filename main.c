@@ -21,9 +21,10 @@
 
 #define DEFAULT_LISTEN_PORT 7613
 #define DEFAULT_SOCK_PATH "./parserver.sock"
-#define VERSION "1.5"
+#define VERSION "1.6"
 
 static int running = 1;
+static int use_daemon = 0;
 static int use_tcp = 0;
 static int port = 0;
 static in_addr_t ip = 0;
@@ -34,6 +35,7 @@ static struct option long_options[] = {
 	{"port",    required_argument, 0, 'p'},
 	{"listen",  optional_argument, 0, 'l'},
 	{"path",    required_argument, 0, 's'},
+	{"daemon",  no_argument,       0, 'd'},
 	{"verbose", no_argument,       0, 'v'},
 	{"help",    no_argument,       0, 'h'},
 	{0,0,0,0} /* sentinel */
@@ -44,6 +46,7 @@ void show_usage(void){
 	printf("  -p, --port=PORT    Port to use for TCP [default: %d]\n"
 	       "  -l, --listen[=IP]  Listen on TCP [default ip: 127.0.0.1]\n"
 	       "  -s, --path=FILE    Path to Unix Domain Socket. [default: %s]\n"
+	       "  -d, --daemon       Fork to background.\n"
 	       "  -v, --verbose      Enable verbose output.\n"
 	       "  -h, --help         This text.\n"
 	       "\n"
@@ -192,7 +195,7 @@ int main(int argc, char* argv[]){
 	int option_index = 0;
 	int op;
 
-	while ( (op = getopt_long(argc, argv, "hvp:l::s:", long_options, &option_index)) != -1 )
+	while ( (op = getopt_long(argc, argv, "hvdp:l::s:", long_options, &option_index)) != -1 )
 		switch (op){
 		case 0: /* longopt with flag */
 		case '?': /* unknown */
@@ -214,6 +217,10 @@ int main(int argc, char* argv[]){
 
 		case 's': /* --path */
 			sock_path = optarg;
+			break;
+
+		case 'd': /* --daemon */
+			use_daemon = 1;
 			break;
 
 		case 'v': /* --verbose */
@@ -254,6 +261,16 @@ int main(int argc, char* argv[]){
 	fprintf(verbose, "Opening device %s\n", device);
 	if ( (fd=port_open(device)) == -1 ){
 		goto socket_cleanup; /* error already shown */
+	}
+
+	if ( use_daemon ){
+		pid_t pid = fork();
+
+		if ( pid ){ /* parent */
+			return 0;
+		}
+
+		/** @todo save pid to file */
 	}
 
 	/* all pins low */
