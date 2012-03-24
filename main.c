@@ -20,8 +20,9 @@
 #include <arpa/inet.h>
 
 #define DEFAULT_LISTEN_PORT 7613
-#define DEFAULT_SOCK_PATH "./parserver.sock"
-#define VERSION "1.6"
+#define DEFAULT_SOCK_PATH "parserver.sock"
+#define DEFAULT_PID_PATH "parserver.pid"
+#define VERSION "1.7"
 
 static int running = 1;
 static int use_daemon = 0;
@@ -36,6 +37,7 @@ static struct option long_options[] = {
 	{"port",    required_argument, 0, 'p'},
 	{"listen",  optional_argument, 0, 'l'},
 	{"path",    required_argument, 0, 's'},
+	{"pidpath", required_argument, 0, 'n'},
 	{"daemon",  no_argument,       0, 'd'},
 	{"verbose", no_argument,       0, 'v'},
 	{"quiet",   no_argument,       0, 'q'},
@@ -49,7 +51,8 @@ void show_usage(void){
 	printf("usage: parserver [OPTIONS] DEVICE\n");
 	printf("  -p, --port=PORT    Port to use for TCP [default: %d]\n"
 	       "  -l, --listen[=IP]  Listen on TCP [default ip: 127.0.0.1]\n"
-	       "  -s, --path=FILE    Path to Unix Domain Socket. [default: %s]\n"
+	       "  -s, --path=FILE    Path to Unix Domain Socket. [default: " DEFAULT_SOCK_PATH "]\n"
+	       "  -n, --pidpath=FILE Path to pidfile (when using --daemon) [default: " DEFAULT_PID_PATH "\n"
 	       "  -d, --daemon       Fork to background.\n"
 	       "  -v, --verbose      Enable verbose output.\n"
 	       "  -q, --quiet        Enable quiet output.\n"
@@ -57,11 +60,12 @@ void show_usage(void){
 	       "\n"
 	       "Unless -l is given it listens on unix domain socket.\n"
 	       "Device is usually /dev/parport0\n"
-	       , DEFAULT_LISTEN_PORT, DEFAULT_SOCK_PATH);
+	       , DEFAULT_LISTEN_PORT);
 }
 
 void signal_handler(int sig){
 	if ( !running ){
+		fprintf(stderr, "\rgot signal %d again, aborting\n", sig);
 		abort();
 	}
 	if ( !quiet_flag ){
@@ -197,12 +201,13 @@ int main(int argc, char* argv[]){
 	ip = inet_addr("127.0.0.1");
 	port = htons(DEFAULT_LISTEN_PORT);
 	const char* sock_path = DEFAULT_SOCK_PATH;
+	const char* pid_path = DEFAULT_PID_PATH;
 	int exit_code = 1;
 
 	int option_index = 0;
 	int op;
 
-	while ( (op = getopt_long(argc, argv, "hvqdp:l::s:", long_options, &option_index)) != -1 )
+	while ( (op = getopt_long(argc, argv, "hvqdn:p:l::s:", long_options, &option_index)) != -1 )
 		switch (op){
 		case 0: /* longopt with flag */
 		case '?': /* unknown */
@@ -224,6 +229,10 @@ int main(int argc, char* argv[]){
 
 		case 's': /* --path */
 			sock_path = optarg;
+			break;
+
+		case 'n': /* --pidpath */
+			pid_path = optarg;
 			break;
 
 		case 'd': /* --daemon */
@@ -282,11 +291,17 @@ int main(int argc, char* argv[]){
 	if ( use_daemon ){
 		pid_t pid = fork();
 
+		/* store pid in file */
 		if ( pid ){ /* parent */
+			FILE* fp = fopen(pid_path, "w");
+			if ( !fp ){
+				fprintf(stderr, "Failed to write pidfile `%s': %s (child is still running as %d)\n", pid_path, strerror(errno), pid);
+				return 1;
+			}
+			fprintf(fp, "%d\n", pid);
+			fclose(fp);
 			return 0;
 		}
-
-		/** @todo save pid to file */
 	}
 
 	/* all pins low */
@@ -369,7 +384,6 @@ int main(int argc, char* argv[]){
 		}
 
 		free(cmd);
-
 		shutdown(client, SHUT_RDWR);
 	}
 
