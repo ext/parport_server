@@ -93,6 +93,61 @@ static int port_open(const char* port){
 	return fd;
 }
 
+static int open_domainsocket(const char* sock_path){
+	struct sockaddr_un addr = {0,};
+
+	/* Open socket */
+	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	if ( sock == -1 ){
+		perror("Failed to create socket");
+		return -1;
+	}
+
+	/* Try to bind socket and if it fails it tries to connect to the socket to
+	 * determine if it is running or not. If a dead socket is detected it tries to
+	 * remove it and retries. */
+	int retry = 0;
+	while ( retry++ < 3 ){ /* retry at most 2 times */
+		addr.sun_family = AF_UNIX;
+		snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", sock_path);
+		if ( bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == -1 ){
+			if ( errno == EADDRINUSE ){ /* adress already used, try to connect to the socket */
+				if ( connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == 0 ){
+					fprintf(stderr, "daemon already running\n");
+					exit(0);
+				} else {
+					/* could not connect, assume it is dead */
+					fprintf(stderr, "dead daemon deteched, removing socket\n");
+					unlink(addr.sun_path);
+					continue;
+				}
+			} else {
+				perror("failed to bind socket");
+				return -1;
+			}
+		}
+		break;
+	}
+
+	if ( retry == 3 ){
+		/* Failed to bind */
+		fprintf(stderr, "failed to bind socket\n");
+		return -1;
+	}
+
+	/* Setup listen */
+	if ( listen(sock, 1) == -1){
+		perror("failed to listen");
+		unlink(addr.sun_path);
+		return -1;
+	}
+
+	/* fix permissions on socket */
+	chmod(addr.sun_path, 0666);
+
+	return sock;
+}
+
 int main(int argc, char* argv[]){
 	ip = inet_addr("127.0.0.1");
 	const char* sock_path = DEFAULT_SOCK_PATH;
@@ -148,44 +203,11 @@ int main(int argc, char* argv[]){
 	signal(SIGINT, sigint_handler);
 
 	/* open listening socket */
-	struct sockaddr_un addr = {0,};
-	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-	if ( sock == -1 ){
-		perror("Failed to create socket");
+	int sock;
+	if ( (sock=open_domainsocket(sock_path)) == -1 ){
+		/* error already shown */
 		return 1;
 	}
-	int retry = 0;
-	while ( retry++ < 3 ){ /* retry at most 2 times */
-		addr.sun_family = AF_UNIX;
-		snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", sock_path);
-		if ( bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == -1 ){
-			if ( errno == EADDRINUSE ){ /* adress already used, try to connect to the socket */
-				if ( connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == 0 ){
-					fprintf(stderr, "daemon already running\n");
-					exit(0);
-				} else {
-					/* could not connect, assume it is dead */
-					fprintf(stderr, "dead daemon deteched, removing socket\n");
-					unlink(addr.sun_path);
-					continue;
-				}
-			} else {
-				perror("failed to bind socket");
-				return 1;
-			}
-		}
-		break;
-	}
-	if ( retry == 3 ){ /* failed to bind */
-		fprintf(stderr, "failed to bind socket\n");
-		exit(1);
-	}
-	if ( listen(sock, 1) == -1){
-		perror("failed to listen");
-	}
-
-	/* fix permissions on socket */
-	chmod(addr.sun_path, 0666);
 
 	/* enable verbose mode */
 	FILE* verbose = fopen(verbose_flag ? "/dev/stderr" : "/dev/null", "w");
