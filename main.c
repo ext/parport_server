@@ -22,7 +22,7 @@
 #define DEFAULT_LISTEN_PORT 7613
 #define DEFAULT_SOCK_PATH "parserver.sock"
 #define DEFAULT_PID_PATH "parserver.pid"
-#define VERSION "1.8"
+#define VERSION "1.9"
 
 static int running = 1;
 static int use_daemon = 0;
