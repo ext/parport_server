@@ -95,7 +95,7 @@ int main(int argc, char* argv[]){
 	int option_index = 0;
 	int op;
 
-	while ( (op = getopt_long(argc, argv, "", long_options, &option_index)) != -1 )
+	while ( (op = getopt_long(argc, argv, "hp:l:", long_options, &option_index)) != -1 )
 		switch (op){
 		case 0: /* longopt with flag */
 		case '?': /* unknown */
