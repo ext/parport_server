@@ -25,6 +25,7 @@
 static struct option long_options[] = {
 	{"port", required_argument, 0, 'p'},
 	{"listen", optional_argument, 0, 'l'},
+	{"path", required_argument, 0, 's'},
 	{"help", no_argument, 0, 'h'},
 	{0,0,0,0} /* sentinel */
 };
@@ -34,11 +35,12 @@ void show_usage(void){
 	printf("usage: parserver [OPTIONS] DEVICE\n");
 	printf("  -p, --port=PORT    Listen on port [default: %d]\n"
 	       "  -l, --listen=IP    Listen on on ip [default: 127.0.0.1]\n"
+	       "  -s, --path=FILE    Path to Unix Domain Socket. [default: %s]\n"
 	       "  -h, --help         This text.\n"
 	       "\n"
 	       "If neither -l or -p is given it listens on unix domain socket.\n"
 	       "Device is usually /dev/parport0\n"
-	       , DEFAULT_LISTEN_PORT);
+	       , DEFAULT_LISTEN_PORT, DEFAULT_SOCK_PATH);
 }
 
 static int running = 1;
@@ -95,7 +97,7 @@ int main(int argc, char* argv[]){
 	int option_index = 0;
 	int op;
 
-	while ( (op = getopt_long(argc, argv, "hp:l::", long_options, &option_index)) != -1 )
+	while ( (op = getopt_long(argc, argv, "hp:l::s:", long_options, &option_index)) != -1 )
 		switch (op){
 		case 0: /* longopt with flag */
 		case '?': /* unknown */
@@ -110,6 +112,10 @@ int main(int argc, char* argv[]){
 			if ( optarg ){
 				ip = inet_addr(optarg);
 			}
+			break;
+
+		case 's': /* --path */
+			sock_path = optarg;
 			break;
 
 		case 'h': /* --help */
