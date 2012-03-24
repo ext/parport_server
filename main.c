@@ -60,9 +60,14 @@ void show_usage(void){
 	       , DEFAULT_LISTEN_PORT, DEFAULT_SOCK_PATH);
 }
 
-void sigint_handler(int sig){
+void signal_handler(int sig){
+	if ( !running ){
+		abort();
+	}
+	if ( !quiet_flag ){
+		fprintf(stderr, "\rgot signal %d\n", sig);
+	}
 	running = 0;
-	putc('\r', stderr);
 }
 
 static int port_open(const char* port){
@@ -254,7 +259,8 @@ int main(int argc, char* argv[]){
 	                           "(C) 2011-2012 David Sveningsson <ext@sidvind.com>\n\n");
 
 	/* handle signals */
-	signal(SIGINT, sigint_handler);
+	signal(SIGINT, signal_handler);
+	signal(SIGTERM, signal_handler);
 
 	/* enable verbose mode */
 	verbose = fopen(verbose_flag ? "/dev/stderr" : "/dev/null", "w");
