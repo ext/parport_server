@@ -21,7 +21,7 @@
 
 #define DEFAULT_LISTEN_PORT 7613
 #define DEFAULT_SOCK_PATH "./parserver.sock"
-#define VERSION "1.1"
+#define VERSION "1.5"
 
 static int running = 1;
 static int use_tcp = 0;
