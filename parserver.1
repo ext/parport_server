@@ -5,7 +5,7 @@ parserver \- Parallel Port Interface Server
 .nf
 .B parserver [-l [\fIIP\fP]] [-p \fIPORT\fP] [-s \fIPATH\fP] \fIDEVICE\fP...
 .SH DESCRIPTION
-A simple parallel port server for controlling invidual bits remotely.
+A simple parallel port server for controlling individual bits remotely. It features a simple protocol to set, toggle and strobe bits and can listen on both unix domain sockets and TCP connections. It is useful when something is hooked to the parallel port and is going to be remotely controlled.
 .TP
 \fB\-l\fR, \fB\-\-listen[\fR=\fIIP\fR]
 Use a TCP socket instead of unix domain socket. By default it only listens on
