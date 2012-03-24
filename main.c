@@ -62,7 +62,7 @@ static int port_open(const char* port){
 	int fd = open(port, O_RDWR);
 
 	if ( fd == -1 ){
-		perror("Failed to open parallel port");
+		fprintf(stderr, "Failed to open parallel port `%s': %s\n", port, strerror(errno));
 		return -1;
 	}
 
