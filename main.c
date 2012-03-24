@@ -8,7 +8,7 @@
 #include <linux/ppdev.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdlib.h>
+#include <ctype.h>
 #include <signal.h>
 #include <sys/select.h>
 #include <sys/stat.h>
@@ -24,6 +24,7 @@
 #define VERSION "1.1"
 
 static int running = 1;
+static int use_tcp = 0;
 static int port = 0;
 static in_addr_t ip = 0;
 static int verbose_flag = 0;
@@ -202,9 +203,12 @@ int main(int argc, char* argv[]){
 			break;
 
 		case 'l': /* --listen */
+			use_tcp = 1;
 			ip = inet_addr("127.0.0.1");
 			if ( optarg ){
 				ip = inet_addr(optarg);
+			} else if ( optind < argc && isdigit(argv[optind][0]) ){ /* workaround for arguments to optional parameters */
+				ip = inet_addr(argv[optind]);
 			}
 			break;
 
@@ -240,9 +244,9 @@ int main(int argc, char* argv[]){
 
 	/* open listening socket */
 	int sock;
-	if ( ip == 0 && (sock=open_domainsocket(sock_path)) == -1 ){
+	if ( use_tcp == 0 && (sock=open_domainsocket(sock_path)) == -1 ){
 		return 1; /* error already shown */
-	} else if ( ip != 0 && (sock=open_tcp(ip, port)) == -1 ){
+	} else if ( use_tcp == 1 && (sock=open_tcp(ip, port)) == -1 ){
 		return 1; /* error already shown */
 	}
 
