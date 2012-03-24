@@ -22,7 +22,7 @@
 #define DEFAULT_LISTEN_PORT 7613
 #define DEFAULT_SOCK_PATH "parserver.sock"
 #define DEFAULT_PID_PATH "parserver.pid"
-#define VERSION "1.7"
+#define VERSION "1.8"
 
 static int running = 1;
 static int use_daemon = 0;
@@ -37,7 +37,7 @@ static struct option long_options[] = {
 	{"port",    required_argument, 0, 'p'},
 	{"listen",  optional_argument, 0, 'l'},
 	{"path",    required_argument, 0, 's'},
-	{"pidpath", required_argument, 0, 'n'},
+	{"pidfile", required_argument, 0, 'n'},
 	{"daemon",  no_argument,       0, 'd'},
 	{"verbose", no_argument,       0, 'v'},
 	{"quiet",   no_argument,       0, 'q'},
@@ -52,7 +52,7 @@ void show_usage(void){
 	printf("  -p, --port=PORT    Port to use for TCP [default: %d]\n"
 	       "  -l, --listen[=IP]  Listen on TCP [default ip: 127.0.0.1]\n"
 	       "  -s, --path=FILE    Path to Unix Domain Socket. [default: " DEFAULT_SOCK_PATH "]\n"
-	       "  -n, --pidpath=FILE Path to pidfile (when using --daemon) [default: " DEFAULT_PID_PATH "\n"
+	       "  -n, --pidfile=FILE Path to pidfile (when using --daemon) [default: " DEFAULT_PID_PATH "\n"
 	       "  -d, --daemon       Fork to background.\n"
 	       "  -v, --verbose      Enable verbose output.\n"
 	       "  -q, --quiet        Enable quiet output.\n"
@@ -231,7 +231,7 @@ int main(int argc, char* argv[]){
 			sock_path = optarg;
 			break;
 
-		case 'n': /* --pidpath */
+		case 'n': /* --pidfile */
 			pid_path = optarg;
 			break;
 
