@@ -28,6 +28,7 @@ static int use_daemon = 0;
 static int use_tcp = 0;
 static int port = 0;
 static in_addr_t ip = 0;
+static int quiet_flag = 0;
 static int verbose_flag = 0;
 static FILE* verbose = NULL;
 
@@ -37,17 +38,21 @@ static struct option long_options[] = {
 	{"path",    required_argument, 0, 's'},
 	{"daemon",  no_argument,       0, 'd'},
 	{"verbose", no_argument,       0, 'v'},
+	{"quiet",   no_argument,       0, 'q'},
 	{"help",    no_argument,       0, 'h'},
 	{0,0,0,0} /* sentinel */
 };
 
 void show_usage(void){
+	printf("parserver-" VERSION " Parallel port interface server.\n"
+	       "(C) 2011-2012 David Sveningsson <ext@sidvind.com>\n\n");
 	printf("usage: parserver [OPTIONS] DEVICE\n");
 	printf("  -p, --port=PORT    Port to use for TCP [default: %d]\n"
 	       "  -l, --listen[=IP]  Listen on TCP [default ip: 127.0.0.1]\n"
 	       "  -s, --path=FILE    Path to Unix Domain Socket. [default: %s]\n"
 	       "  -d, --daemon       Fork to background.\n"
 	       "  -v, --verbose      Enable verbose output.\n"
+	       "  -q, --quiet        Enable quiet output.\n"
 	       "  -h, --help         This text.\n"
 	       "\n"
 	       "Unless -l is given it listens on unix domain socket.\n"
@@ -184,9 +189,6 @@ static int open_tcp(in_addr_t ip, int port){
 }
 
 int main(int argc, char* argv[]){
-	printf("parserver-" VERSION " Parallel port interface server.\n"
-	       "(C) 2011-2012 David Sveningsson <ext@sidvind.com>\n\n");
-
 	ip = inet_addr("127.0.0.1");
 	port = htons(DEFAULT_LISTEN_PORT);
 	const char* sock_path = DEFAULT_SOCK_PATH;
@@ -195,7 +197,7 @@ int main(int argc, char* argv[]){
 	int option_index = 0;
 	int op;
 
-	while ( (op = getopt_long(argc, argv, "hvdp:l::s:", long_options, &option_index)) != -1 )
+	while ( (op = getopt_long(argc, argv, "hvqdp:l::s:", long_options, &option_index)) != -1 )
 		switch (op){
 		case 0: /* longopt with flag */
 		case '?': /* unknown */
@@ -227,6 +229,10 @@ int main(int argc, char* argv[]){
 			verbose_flag = 1;
 			break;
 
+		case 'q': /* --quiet */
+			quiet_flag = 1;
+			break;
+
 		case 'h': /* --help */
 			show_usage();
 			exit(0);
@@ -242,6 +248,10 @@ int main(int argc, char* argv[]){
 	}
 
 	const char* device = argv[optind];
+
+	/* text */
+	if ( !quiet_flag ) fprintf(stderr, "parserver-" VERSION " Parallel port interface server.\n"
+	                           "(C) 2011-2012 David Sveningsson <ext@sidvind.com>\n\n");
 
 	/* handle signals */
 	signal(SIGINT, sigint_handler);
@@ -357,7 +367,7 @@ int main(int argc, char* argv[]){
 		shutdown(client, SHUT_RDWR);
 	}
 
-	fprintf(stderr, "Shutting down\n");
+	if ( !quiet_flag ) fprintf(stderr, "Shutting down\n");
 	exit_code = 0;
 
 	// Release and close the parallel port
