@@ -1,0 +1,41 @@
+.TH parserver 1 "24 Mar 2012"
+.SH NAME
+parserver \- Parallel Port Interface Server
+.SH SYNOPSIS
+.nf
+.B parserver [-l [\fIIP\fP]] [-p \fIPORT\fP] [-s \fIPATH\fP] \fIDEVICE\fP...
+.SH DESCRIPTION
+A simple parallel port server for controlling invidual bits remotely.
+.TP
+\fB\-l\fR, \fB\-\-listen[\fR=\fIIP\fR]
+Use a TCP socket instead of unix domain socket. By default it only listens on
+127.0.0.1 but \fIIP\fR is used if given. Port can be changed using \-\-port.
+.TP
+\fB\-p\fR, \fB\-\-port\fR=\fIPORT\fR
+Port to use for TCP sockets. Default is 7613.
+.TP
+\fB\-s\fR, \fB\-\-path\fR=\fIPATH\fR
+Path to unix domain socket. Default is parserver.sock in working directory.
+.TP
+\fB\-v\fR, \fB\-\-verbose
+Enables verbose output.
+.TP
+\fB\-h\fR, \fB\-\-help
+Short help.
+.SH PROTOCOL
+A simple text-based protocol is used to set output. By opening a connection to
+the server one command may be issued at a time. All commands return a string
+with the format CODE;MESSAGE where CODE is 1 for success and 0 for errors.
+MESSAGE can be empty (e.g. for successful operation) but if set is a description
+of what went wrong.
+.TP
+All pins are prefixed with a "d", e.g "d0" for the first pin.
+.TP
+\fBSET\fR \fIPIN\fR \fIMODE\fR
+Set a data pin high or low. \fIPIN\fR is d0-7 and \fIMODE\fR is HIGH, LOW or
+TOGGLE. E.g. "SET d0 TOGGLE" will toggle the bit on d0.
+.TP
+\fBSTROBE\fR \fIPIN\fR \fITIME\fR
+Set data pin high for \fITIME\fR milliseconds and then back to low again.
+.SH COPYRIGHT
+Copyright (C) 2011-2012 David Sveningsson <ext@sidvind.com>.
