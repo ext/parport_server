@@ -366,6 +366,8 @@ int main(int argc, char* argv[]){
 			} else if ( strcasecmp(action, "toggle") == 0 ){
 				dataL ^= pin;
 			}
+			bytes = snprintf(buffer, 128, "1;ok\n");
+			send(client, buffer, (int)bytes, MSG_NOSIGNAL);
 		} else if ( strcasecmp(cmd, "strobe") == 0 ){
 			char* pin_str = strtok(NULL, " ");
 			char* time_str = strtok(NULL, " ");
@@ -377,9 +379,11 @@ int main(int argc, char* argv[]){
 			ioctl(fd, PPWDATA, &dataL);
 			usleep(time);
 			dataL &= ~pin;
+			bytes = snprintf(buffer, 128, "1;ok\n");
+			send(client, buffer, (int)bytes, MSG_NOSIGNAL);
 		} else {
 			fprintf(verbose, "unknown command: %s\n", cmd);
-			bytes = snprintf(buffer, 128, "0;unknown command: %s", cmd);
+			bytes = snprintf(buffer, 128, "0;unknown command: %s\n", cmd);
 			send(client, buffer, (int)bytes, MSG_NOSIGNAL);
 		}
 
