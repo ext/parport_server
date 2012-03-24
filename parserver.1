@@ -17,8 +17,17 @@ Port to use for TCP sockets. Default is 7613.
 \fB\-s\fR, \fB\-\-path\fR=\fIPATH\fR
 Path to unix domain socket. Default is parserver.sock in working directory.
 .TP
+\fB\-n\fR, \fB\-\-pidfile\fR=\fIPATH\fR
+When using --daemon the pid will be stored to \fIPATH\fR. Default is parserver.pid.
+.TP
+\fB\-d\fR, \fB\-\-daemon
+Launch in background mode.
+.TP
 \fB\-v\fR, \fB\-\-verbose
 Enables verbose output.
+.TP
+\fB\-q\fR, \fB\-\-quiet
+Suppress all messages except fatal errors.
 .TP
 \fB\-h\fR, \fB\-\-help
 Short help.
