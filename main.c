@@ -24,9 +24,10 @@
 
 
 static int running = 1;
-static int port = DEFAULT_LISTEN_PORT;
+static int port = 0;
 static in_addr_t ip = 0;
 static int verbose_flag = 0;
+static FILE* verbose = NULL;
 
 static struct option long_options[] = {
 	{"port",    required_argument, 0, 'p'},
@@ -95,7 +96,6 @@ static int port_open(const char* port){
 
 static int open_domainsocket(const char* sock_path){
 	struct sockaddr_un addr = {0,};
-
 	/* Open socket */
 	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	if ( sock == -1 ){
@@ -145,11 +145,44 @@ static int open_domainsocket(const char* sock_path){
 	/* fix permissions on socket */
 	chmod(addr.sun_path, 0666);
 
+	fprintf(verbose, "Listening on socket `%s'.\n", addr.sun_path);
+	return sock;
+}
+
+static int open_tcp(in_addr_t ip, int port){
+	struct sockaddr_in addr;
+
+	/* bind and listen to port */
+	int sock = socket(AF_INET, SOCK_STREAM, 0);
+	if ( sock == -1 ){
+		perror("socket");
+		return -1;
+	}
+
+	int optval = 1;
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(int));
+
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = ip;
+	addr.sin_port = port;
+
+	if ( bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_in)) == -1 ){
+		perror("bind");
+		return -1;
+	}
+
+	if ( listen(sock, 3) == -1 ){
+		perror("listen");
+		return -1;
+	}
+
+	fprintf(verbose, "Listening on TCP %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 	return sock;
 }
 
 int main(int argc, char* argv[]){
 	ip = inet_addr("127.0.0.1");
+	port = htons(DEFAULT_LISTEN_PORT);
 	const char* sock_path = DEFAULT_SOCK_PATH;
 	int exit_code = 1;
 
@@ -163,7 +196,7 @@ int main(int argc, char* argv[]){
 			break;
 
 		case 'p': /* --port */
-			port = atoi(optarg);
+			port = htons(atoi(optarg));
 			break;
 
 		case 'l': /* --listen */
@@ -202,15 +235,16 @@ int main(int argc, char* argv[]){
 	/* handle signals */
 	signal(SIGINT, sigint_handler);
 
+	/* enable verbose mode */
+	verbose = fopen(verbose_flag ? "/dev/stderr" : "/dev/null", "w");
+
 	/* open listening socket */
 	int sock;
-	if ( (sock=open_domainsocket(sock_path)) == -1 ){
-		/* error already shown */
-		return 1;
+	if ( ip == 0 && (sock=open_domainsocket(sock_path)) == -1 ){
+		return 1; /* error already shown */
+	} else if ( ip != 0 && (sock=open_tcp(ip, port)) == -1 ){
+		return 1; /* error already shown */
 	}
-
-	/* enable verbose mode */
-	FILE* verbose = fopen(verbose_flag ? "/dev/stderr" : "/dev/null", "w");
 
 	int fd;
 	fprintf(stderr, "Opening device %s\n", device);
