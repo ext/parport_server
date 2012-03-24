@@ -24,7 +24,7 @@
 
 static struct option long_options[] = {
 	{"port", required_argument, 0, 'p'},
-	{"listen", required_argument, 0, 'l'},
+	{"listen", optional_argument, 0, 'l'},
 	{"help", no_argument, 0, 'h'},
 	{0,0,0,0} /* sentinel */
 };
@@ -43,7 +43,7 @@ void show_usage(void){
 
 static int running = 1;
 static int port = DEFAULT_LISTEN_PORT;
-static in_addr_t ip;
+static in_addr_t ip = 0;
 
 void sigint_handler(int sig){
 	running = 0;
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]){
 	int option_index = 0;
 	int op;
 
-	while ( (op = getopt_long(argc, argv, "hp:l:", long_options, &option_index)) != -1 )
+	while ( (op = getopt_long(argc, argv, "hp:l::", long_options, &option_index)) != -1 )
 		switch (op){
 		case 0: /* longopt with flag */
 		case '?': /* unknown */
@@ -106,7 +106,10 @@ int main(int argc, char* argv[]){
 			break;
 
 		case 'l': /* --listen */
-			ip = inet_addr(optarg);
+			ip = inet_addr("127.0.0.1");
+			if ( optarg ){
+				ip = inet_addr(optarg);
+			}
 			break;
 
 		case 'h': /* --help */
