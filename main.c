@@ -22,11 +22,18 @@
 #define DEFAULT_LISTEN_PORT 7613
 #define DEFAULT_SOCK_PATH "./parserver.sock"
 
+
+static int running = 1;
+static int port = DEFAULT_LISTEN_PORT;
+static in_addr_t ip = 0;
+static int verbose_flag = 0;
+
 static struct option long_options[] = {
-	{"port",   required_argument, 0, 'p'},
-	{"listen", optional_argument, 0, 'l'},
-	{"path",   required_argument, 0, 's'},
-	{"help",   no_argument,       0, 'h'},
+	{"port",    required_argument, 0, 'p'},
+	{"listen",  optional_argument, 0, 'l'},
+	{"path",    required_argument, 0, 's'},
+	{"verbose", no_argument,       0, 'v'},
+	{"help",    no_argument,       0, 'h'},
 	{0,0,0,0} /* sentinel */
 };
 
@@ -36,16 +43,13 @@ void show_usage(void){
 	printf("  -p, --port=PORT    Listen on port [default: %d]\n"
 	       "  -l, --listen=IP    Listen on on ip [default: 127.0.0.1]\n"
 	       "  -s, --path=FILE    Path to Unix Domain Socket. [default: %s]\n"
+	       "  -v, --verbose      Enable verbose output.\n"
 	       "  -h, --help         This text.\n"
 	       "\n"
 	       "If neither -l or -p is given it listens on unix domain socket.\n"
 	       "Device is usually /dev/parport0\n"
 	       , DEFAULT_LISTEN_PORT, DEFAULT_SOCK_PATH);
 }
-
-static int running = 1;
-static int port = DEFAULT_LISTEN_PORT;
-static in_addr_t ip = 0;
 
 void sigint_handler(int sig){
 	running = 0;
@@ -97,7 +101,7 @@ int main(int argc, char* argv[]){
 	int option_index = 0;
 	int op;
 
-	while ( (op = getopt_long(argc, argv, "hp:l::s:", long_options, &option_index)) != -1 )
+	while ( (op = getopt_long(argc, argv, "hvp:l::s:", long_options, &option_index)) != -1 )
 		switch (op){
 		case 0: /* longopt with flag */
 		case '?': /* unknown */
@@ -116,6 +120,10 @@ int main(int argc, char* argv[]){
 
 		case 's': /* --path */
 			sock_path = optarg;
+			break;
+
+		case 'v': /* --verbose */
+			verbose_flag = 1;
 			break;
 
 		case 'h': /* --help */
@@ -179,6 +187,9 @@ int main(int argc, char* argv[]){
 	/* fix permissions on socket */
 	chmod(addr.sun_path, 0666);
 
+	/* enable verbose mode */
+	FILE* verbose = fopen(verbose_flag ? "/dev/stderr" : "/dev/null", "w");
+
 	int fd;
 	fprintf(stderr, "Opening device %s\n", device);
 	if ( (fd=port_open(device)) == -1 ){
@@ -190,7 +201,7 @@ int main(int argc, char* argv[]){
 	char dataL = 0x00;
 
 	while ( running ){
-		printf("current output: 0x%02x\n", 0xFF & dataL);
+		fprintf(verbose, "current output: 0x%02x\n", 0xFF & dataL);
 		ioctl(fd, PPWDATA, &dataH);
 		ioctl(fd, PPWDATA, &dataL);
 
@@ -227,7 +238,7 @@ int main(int argc, char* argv[]){
 			buffer[--bytes] = 0;
 		}
 
-		fprintf(stderr, "client data: %*s\n", (int)bytes, buffer);
+		fprintf(verbose, "client data: %*s\n", (int)bytes, buffer);
 
 		char* cmd = strtok(buffer, " ");
 		if ( !cmd ){
@@ -259,7 +270,7 @@ int main(int argc, char* argv[]){
 			usleep(time);
 			dataL &= ~pin;
 		} else {
-			fprintf(stderr, "unknown command: %s\n", cmd);
+			fprintf(verbose, "unknown command: %s\n", cmd);
 			bytes = snprintf(buffer, 128, "0;unknown command: %s", cmd);
 			send(client, buffer, (int)bytes, MSG_NOSIGNAL);
 		}
