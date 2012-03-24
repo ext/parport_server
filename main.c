@@ -23,10 +23,10 @@
 #define DEFAULT_SOCK_PATH "./parserver.sock"
 
 static struct option long_options[] = {
-	{"port", required_argument, 0, 'p'},
+	{"port",   required_argument, 0, 'p'},
 	{"listen", optional_argument, 0, 'l'},
-	{"path", required_argument, 0, 's'},
-	{"help", no_argument, 0, 'h'},
+	{"path",   required_argument, 0, 's'},
+	{"help",   no_argument,       0, 'h'},
 	{0,0,0,0} /* sentinel */
 };
 
