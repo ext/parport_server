@@ -33,3 +33,8 @@ Install
 Installation is a simple `make` and `make install`.
 
 Gentoo users can use layman to add ext-devlibs where an ebuild is present which includes an init.d script.
+
+Sample Hardware
+---------------
+
+At https://nitroxy.com/wiki/Kassal%C3%A5dor#Styrkort there is a schematic for a relay connected parallel port which works fine with this software. I am however not an electrical engineer so I take no responsibility for it; it is provided for reference only. The description is in swedish only thought but it isn'ty much useful anyway.
